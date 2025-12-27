@@ -1,0 +1,206 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Strength Tester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 0px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: transparent;
+        }
+    </style>
+</head>
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl">
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-2"><a href="https://worldprofitpro.com/password-strength-tester/">Password Strength Tester Or Generate Random One</a></h1>
+        <p class="text-center text-gray-600 text-sm mb-6"><b>Enter a password or generate a random one to check its strength, entropy, and estimated crack time.</p>
+
+        <!-- Password Input and Generate Button -->
+        <div class="flex items-center space-x-4 mb-4">
+            <input type="text" id="password-input" class="w-full px-4 py-2 border rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter or generate a password">
+            <button id="generate-btn" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none">Generate</button>
+        </div>
+
+        <!-- Password Length Slider -->
+        <div class="mb-4">
+            <label for="password-length" class="text-gray-600 text-sm">Password Length: <span id="length-display">12</span></label>
+            <input type="range" id="password-length" min="8" max="20" value="12" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <!-- Strength Indicator -->
+        <div class="mb-4">
+            <p class="text-gray-600 text-sm">Strength: <span id="strength-text" class="font-semibold">Weak</span></p>
+            <div id="strength-bar" class="h-2 rounded-full bg-gray-200 mt-1"></div>
+        </div>
+
+        <!-- Entropy and Crack Time -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+							<p class="text-gray-600 text-sm"><h4>Entropy:<span id="entropy-text">0 bits</span></p>
+            </div>
+            <div>
+                <p class="text-gray-600 text-sm"><h4>Estimated Crack Time: <span id="crack-time-text">0 seconds</span></p>
+            </div>
+        </div>
+
+        <!-- Error Message Display -->
+        <div id="error-message" class="text-red-500 text-sm text-center mb-4 hidden"></div>
+
+        <!-- Copy Password Button -->
+        <div class="flex justify-center mt-6">
+            <button id="copy-btn" class="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2H6zm-1 2a1 1 0 011-1h8a1 1 0 011 1v11a1 1 0 01-1 1H6a1 1 0 01-1-1V5z"></path></svg>
+                Copy Password
+            </button>
+        </div>
+       <p class="text-center text-gray-600 text-sm mb-6"><b>Designed By:<a href="https://worldprofitpro.com/">WorldProfitPro</a></p>
+    </div>
+
+    <script>
+        const passwordInput = document.getElementById('password-input');
+        const generateBtn = document.getElementById('generate-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const strengthText = document.getElementById('strength-text');
+        const strengthBar = document.getElementById('strength-bar');
+        const entropyText = document.getElementById('entropy-text');
+        const crackTimeText = document.getElementById('crack-time-text');
+        const lengthInput = document.getElementById('password-length');
+        const lengthDisplay = document.getElementById('length-display');
+        const errorMessage = document.getElementById('error-message');
+
+        // Update length display
+        lengthInput.addEventListener('input', () => {
+            lengthDisplay.textContent = lengthInput.value;
+        });
+
+        // Generate random password
+        function generatePassword(length) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+            const randomValues = new Uint32Array(length);
+            crypto.getRandomValues(randomValues);
+            let password = '';
+            for (let i = 0; i < length; i++) {
+                const randomIndex = randomValues[i] % chars.length;
+                password += chars[randomIndex];
+            }
+            return password;
+        }
+
+        // Check password strength
+        function checkStrength(password) {
+            let score = 0;
+            if (password.length >= 8) score += 1;
+            if (password.length >= 12) score += 1;
+            if (/[A-Z]/.test(password)) score += 1;
+            if (/[a-z]/.test(password)) score += 1;
+            if (/[0-9]/.test(password)) score += 1;
+            if (/[!@#$%^&*()]/.test(password)) score += 1;
+
+            if (score <= 2) {
+                strengthText.textContent = 'Weak';
+                strengthBar.style.background = 'linear-gradient(to right, red 33%, #e5e7eb 33%)';
+            } else if (score <= 4) {
+                strengthText.textContent = 'Medium';
+                strengthBar.style.background = 'linear-gradient(to right, yellow 66%, #e5e7eb 66%)';
+            } else {
+                strengthText.textContent = 'Strong';
+                strengthBar.style.background = 'linear-gradient(to right, green 100%, #e5e7eb 100%)';
+            }
+        }
+
+        // Calculate entropy
+        function calculateEntropy(password) {
+            if (!password) return 0;
+
+            let charsetSize = 0;
+            if (/[a-z]/.test(password)) charsetSize += 26;
+            if (/[A-Z]/.test(password)) charsetSize += 26;
+            if (/[0-9]/.test(password)) charsetSize += 10;
+            if (/[!@#$%^&*()]/.test(password)) charsetSize += 10;
+
+            const length = password.length;
+            if (charsetSize === 0) return 0;
+            return length * Math.log2(charsetSize); // Shannon entropy in bits
+        }
+
+        // Estimate crack time
+        function estimateCrackTime(entropy) {
+            if (entropy === 0) return '0 seconds';
+
+            const guessesPerSecond = 1e10; // 10 billion guesses per second
+            const seconds = Math.pow(2, entropy) / guessesPerSecond;
+
+            if (seconds < 60) {
+                return `${Math.round(seconds * 100) / 100} seconds`;
+            } else if (seconds < 3600) {
+                return `${Math.round(seconds / 60 * 100) / 100} minutes`;
+            } else if (seconds < 86400) {
+                return `${Math.round(seconds / 3600 * 100) / 100} hours`;
+            } else if (seconds < 31536000) {
+                return `${Math.round(seconds / 86400 * 100) / 100} days`;
+            } else {
+                return `${Math.round(seconds / 31536000 * 100) / 100} years`;
+            }
+        }
+
+        // Update password stats
+        function updatePasswordStats(password) {
+            errorMessage.classList.add('hidden');
+            if (!password) {
+                entropyText.textContent = '0 bits';
+                crackTimeText.textContent = '0 seconds';
+                return;
+            }
+
+            try {
+                const entropy = calculateEntropy(password);
+                const crackTime = estimateCrackTime(entropy);
+                entropyText.textContent = `${entropy.toFixed(2)} bits`;
+                crackTimeText.textContent = crackTime;
+            } catch (error) {
+                errorMessage.textContent = `Error: ${error.message}`;
+                errorMessage.classList.remove('hidden');
+                entropyText.textContent = 'N/A';
+                crackTimeText.textContent = 'N/A';
+            }
+        }
+
+        // Update UI on password input
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+            checkStrength(password);
+            updatePasswordStats(password);
+        });
+
+        // Generate password on button click
+        generateBtn.addEventListener('click', () => {
+            const length = parseInt(lengthInput.value);
+            const password = generatePassword(length);
+            passwordInput.value = password;
+            checkStrength(password);
+            updatePasswordStats(password);
+        });
+
+        // Copy password to clipboard
+        copyBtn.addEventListener('click', () => {
+            if (passwordInput.value) {
+                navigator.clipboard.writeText(passwordInput.value).then(() => {
+                    alert('Password copied to clipboard!');
+                }).catch(() => {
+                    alert('Failed to copy password. Please copy manually.');
+                });
+            } else {
+                alert('No password to copy!');
+            }
+        });
+
+        // Initialize with a random password
+        generateBtn.click();
+    </script>
+</body>
+</html>
